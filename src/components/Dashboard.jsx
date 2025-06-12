@@ -6,14 +6,28 @@ import AddIncomeForm from './AddIncomeForm';
 import ExpenseList from './ExpenseList';
 
 const Dashboard = () => {
+  const data = useData();
+  const { logout } = useAuth();
+
+  // Trava de segurança: Verifica se o contexto foi carregado corretamente
+  if (!data || typeof data.setSalary !== 'function') {
+    return (
+      <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2em' }}>
+        Ocorreu um erro ao carregar os dados. Por favor, tente recarregar a página ou fazer login novamente.
+      </div>
+    );
+  }
+
   const {
     salary,
     setSalary,
     totalIncome,
     totalExpenses,
     balance,
-  } = useData();
-  const { logout } = useAuth();
+    extraIncome,
+    fixedExpenses,
+    purchases
+  } = data;
 
   return (
     <div className="dashboard">
@@ -23,12 +37,14 @@ const Dashboard = () => {
       </header>
 
       <div className="summary">
-        <div>
-          <label>Salário:</label>
+        <div className="form-group salary-input">
+          <label htmlFor="salary">Salário Mensal (R$):</label>
           <input
             type="number"
+            id="salary"
+            name="salary"
             value={salary}
-            onChange={(e) => setSalary(Number(e.target.value))}
+            onChange={(e) => setSalary(Number(e.target.value) || 0)}
           />
         </div>
         <h2>Resumo Financeiro</h2>
@@ -43,9 +59,9 @@ const Dashboard = () => {
       </div>
 
       <div className="lists-container">
-        <ExpenseList title="Rendas Extras" items={useData().extraIncome} />
-        <ExpenseList title="Gastos Fixos" items={useData().fixedExpenses} />
-        <ExpenseList title="Compras" items={useData().purchases} />
+        <ExpenseList title="Rendas Extras" items={extraIncome} />
+        <ExpenseList title="Gastos Fixos" items={fixedExpenses} />
+        <ExpenseList title="Compras" items={purchases} />
       </div>
     </div>
   );

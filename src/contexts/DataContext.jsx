@@ -1,8 +1,7 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
-// O contexto de dados é criado aqui
-const DataContext = createContext();
+const DataContext = createContext(null);
 
 export const DataProvider = ({ children }) => {
   const { user, users, updateUserData } = useAuth();
@@ -34,8 +33,10 @@ export const DataProvider = ({ children }) => {
       return;
     }
     const newData = { salary, extraIncome, fixedExpenses, purchases };
-    updateUserData(user.username, newData);
-  }, [salary, extraIncome, fixedExpenses, purchases]);
+    if (typeof updateUserData === 'function') {
+        updateUserData(user.username, newData);
+    }
+  }, [salary, extraIncome, fixedExpenses, purchases, isLoading, user, updateUserData]);
 
   const addExtraIncome = (income) => {
     setExtraIncome(prev => [...prev, income]);
@@ -80,5 +81,4 @@ export const DataProvider = ({ children }) => {
   );
 };
 
-// AQUI ESTÁ A CORREÇÃO: Usando o DataContext correto
 export const useData = () => useContext(DataContext);
