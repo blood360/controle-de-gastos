@@ -9,24 +9,16 @@ const Dashboard = () => {
   const data = useData();
   const { logout } = useAuth();
 
-  // Trava de segurança: Verifica se o contexto foi carregado corretamente
-  if (!data || typeof data.setSalary !== 'function') {
-    return (
-      <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2em' }}>
-        Ocorreu um erro ao carregar os dados. Por favor, tente recarregar a página ou fazer login novamente.
-      </div>
-    );
+  if (!data) {
+    return <div>Carregando...</div>;
   }
 
+  // Pegando as novas funções do contexto
   const {
-    salary,
-    setSalary,
-    totalIncome,
-    totalExpenses,
-    balance,
-    extraIncome,
-    fixedExpenses,
-    purchases
+    salary, setSalary,
+    totalIncome, totalExpenses, balance,
+    extraIncome, fixedExpenses, purchases,
+    deleteExtraIncome, deleteFixedExpense, deletePurchase // <-- Nossas novas funções
   } = data;
 
   return (
@@ -44,7 +36,7 @@ const Dashboard = () => {
             id="salary"
             name="salary"
             value={salary}
-            onChange={(e) => setSalary(Number(e.target.value) || 0)}
+            onChange={(e) => setSalary(e.target.value)}
           />
         </div>
         <h2>Resumo Financeiro</h2>
@@ -59,9 +51,10 @@ const Dashboard = () => {
       </div>
 
       <div className="lists-container">
-        <ExpenseList title="Rendas Extras" items={extraIncome} />
-        <ExpenseList title="Gastos Fixos" items={fixedExpenses} />
-        <ExpenseList title="Compras" items={purchases} />
+        {/* Passando a função de exclusão correta para cada lista */}
+        <ExpenseList title="Rendas Extras" items={extraIncome} handleDelete={deleteExtraIncome} />
+        <ExpenseList title="Gastos Fixos" items={fixedExpenses} handleDelete={deleteFixedExpense} />
+        <ExpenseList title="Compras" items={purchases} handleDelete={deletePurchase} />
       </div>
     </div>
   );

@@ -1,21 +1,15 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
-import { useAuth } from '../contexts/AuthContext';
-import { Navigate } from 'react-router-dom';
 
-const LoginPage = () => {
-  const { user } = useAuth();
-
-  if (user) {
-    return <Navigate to="/dashboard" />;
-  }
-
+export default function LoginPage() {
   return (
-    <div>
+    <div className="auth-container">
       <h1>Login</h1>
       <LoginForm />
+      <p style={{ marginTop: '1rem' }}>
+        Não tem uma conta? <Link to="/registrar">Registre-se aqui</Link>
+      </p>
     </div>
   );
-};
-
-export default LoginPage;
+}

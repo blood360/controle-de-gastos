@@ -1,68 +1,51 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [currentUser, setCurrentUser] = useState(JSON.parse(sessionStorage.getItem('currentUser')));
-  const [users, setUsers] = useState(() => JSON.parse(localStorage.getItem('users')) || []);
+  const [users, setUsers] = useLocalStorage('users', []);
+  const [currentUser, setCurrentUser] = useLocalStorage('currentUser', null); // Salva o usuário logado
 
-  useEffect(() => {
-    localStorage.setItem('users', JSON.stringify(users));
-  }, [users]);
-
+  // Função para registrar um novo usuário
   const register = (username, password) => {
     const userExists = users.find(u => u.username === username);
     if (userExists) {
-      alert("Usuário já existe!");
+      alert('Este nome de usuário já existe. Por favor, escolha outro.');
       return false;
     }
-    const newUser = {
-      username,
-      password,
-      data: {
-        salary: 0,
-        extraIncome: [],
-        fixedExpenses: [],
-        purchases: []
-      }
-    };
+    const newUser = { username, password };
     setUsers(prevUsers => [...prevUsers, newUser]);
-    alert("Registro bem-sucedido! Agora você pode fazer o login.");
+    alert('Usuário registrado com sucesso! Agora você pode fazer o login.');
     return true;
   };
 
+  // Função para fazer login
   const login = (username, password) => {
     const userAccount = users.find(u => u.username === username && u.password === password);
     if (userAccount) {
-      const userData = { username: userAccount.username };
-      sessionStorage.setItem('currentUser', JSON.stringify(userData));
-      setCurrentUser(userData);
+      setCurrentUser(userAccount); // Salva o usuário inteiro no estado
       return true;
     }
-    alert("Usuário ou senha inválidos.");
+    alert('Usuário ou senha inválidos.');
     return false;
   };
 
+  // Função para fazer logout
   const logout = () => {
-    sessionStorage.removeItem('currentUser');
-    setCurrentUser(null);
-    window.location.href = '/login';
+    setCurrentUser(null); // Limpa o usuário logado
   };
 
-  const updateUserData = (username, newData) => {
-    setUsers(prevUsers =>
-      prevUsers.map(user =>
-        user.username === username ? { ...user, data: newData } : user
-      )
-    );
+  const value = {
+    currentUser,
+    register,
+    login,
+    logout,
   };
 
-  return (
-    // AQUI ESTÁ A GARANTIA DA CORREÇÃO: `users` está sendo fornecido no value.
-    <AuthContext.Provider value={{ user: currentUser, users, register, login, logout, updateUserData }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+  return useContext(AuthContext);
+};

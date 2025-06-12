@@ -1,84 +1,77 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useContext } from 'react';
 import { useAuth } from './AuthContext';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
+// O contexto é criado aqui, corretamente
 const DataContext = createContext(null);
 
 export const DataProvider = ({ children }) => {
-  const { user, users, updateUserData } = useAuth();
+  const { currentUser } = useAuth();
+  const userStorageKey = currentUser ? `userData_${currentUser.username}` : null;
+  
+  // Voltamos a usar o useLocalStorage, que sabemos que funciona
+  const [data, setData] = useLocalStorage(userStorageKey, {
+    salary: 0,
+    extraIncome: [],
+    fixedExpenses: [],
+    purchases: [],
+  });
 
-  const [salary, setSalary] = useState(0);
-  const [extraIncome, setExtraIncome] = useState([]);
-  const [fixedExpenses, setFixedExpenses] = useState([]);
-  const [purchases, setPurchases] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  if (!currentUser) {
+    return children;
+  }
 
-  useEffect(() => {
-    if (user) {
-      const userAccount = users && users.find(u => u.username === user.username);
-      
-      if (userAccount && userAccount.data) {
-        setSalary(userAccount.data.salary || 0);
-        setExtraIncome(userAccount.data.extraIncome || []);
-        setFixedExpenses(userAccount.data.fixedExpenses || []);
-        setPurchases(userAccount.data.purchases || []);
-      }
-      setIsLoading(false);
-    } else if (!user) {
-      setIsLoading(false);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (isLoading || !user) {
-      return;
-    }
-    const newData = { salary, extraIncome, fixedExpenses, purchases };
-    if (typeof updateUserData === 'function') {
-        updateUserData(user.username, newData);
-    }
-  }, [salary, extraIncome, fixedExpenses, purchases, isLoading, user, updateUserData]);
-
+  // --- Funções de Lógica ---
+  const setSalary = (newSalary) => {
+    setData(prevData => ({ ...prevData, salary: Number(newSalary) || 0 }));
+  };
   const addExtraIncome = (income) => {
-    setExtraIncome(prev => [...prev, income]);
+    const newIncome = { ...income, id: Date.now() };
+    setData(prevData => ({ ...prevData, extraIncome: [...prevData.extraIncome, newIncome] }));
   };
-
   const addFixedExpense = (expense) => {
-    setFixedExpenses(prev => [...prev, expense]);
+    const newExpense = { ...expense, id: Date.now() };
+    setData(prevData => ({ ...prevData, fixedExpenses: [...prevData.fixedExpenses, newExpense] }));
   };
-
   const addPurchase = (purchase) => {
-    setPurchases(prev => [...prev, purchase]);
+    const newPurchase = { ...purchase, id: Date.now() };
+    setData(prevData => ({ ...prevData, purchases: [...prevData.purchases, newPurchase] }));
+  };
+  const deleteExtraIncome = (id) => {
+    setData(prevData => ({...prevData, extraIncome: prevData.extraIncome.filter(item => item.id !== id)}));
+  };
+  const deleteFixedExpense = (id) => {
+    setData(prevData => ({...prevData, fixedExpenses: prevData.fixedExpenses.filter(item => item.id !== id)}));
+  };
+  const deletePurchase = (id) => {
+    setData(prevData => ({...prevData, purchases: prevData.purchases.filter(item => item.id !== id)}));
   };
 
+  const { salary = 0, extraIncome = [], fixedExpenses = [], purchases = [] } = data || {};
   const totalIncome = salary + extraIncome.reduce((acc, curr) => acc + curr.value, 0);
-  const totalExpenses =
-    fixedExpenses.reduce((acc, curr) => acc + curr.value, 0) +
-    purchases.reduce((acc, curr) => acc + curr.value, 0);
+  const totalExpenses = fixedExpenses.reduce((acc, curr) => acc + curr.value, 0) + purchases.reduce((acc, curr) => acc + curr.value, 0);
   const balance = totalIncome - totalExpenses;
 
-  if (isLoading && user) {
-    return <div style={{ textAlign: 'center', padding: '50px', fontSize: '1.2em' }}>Carregando seus dados...</div>;
-  }
-  
+  const value = {
+    salary, extraIncome, fixedExpenses, purchases,
+    setSalary, addExtraIncome, addFixedExpense, addPurchase,
+    deleteExtraIncome, deleteFixedExpense, deletePurchase,
+    totalIncome, totalExpenses, balance,
+  };
+
   return (
-    <DataContext.Provider
-      value={{
-        salary,
-        setSalary,
-        extraIncome,
-        addExtraIncome,
-        fixedExpenses,
-        addFixedExpense,
-        purchases,
-        addPurchase,
-        totalIncome,
-        totalExpenses,
-        balance,
-      }}
-    >
+    <DataContext.Provider value={value}>
       {children}
     </DataContext.Provider>
   );
 };
 
-export const useData = () => useContext(DataContext);
+// AQUI ESTÁ A CORREÇÃO CRÍTICA E FINAL
+// O hook agora aponta para o contexto correto: DataContext
+export const useData = () => {
+  const context = useContext(DataContext);
+  if (context === undefined) {
+    throw new Error('useData must be used within a DataProvider');
+  }
+  return context;
+};
